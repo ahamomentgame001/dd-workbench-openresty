@@ -13,8 +13,8 @@ if [ ! -d "/opt/ComfyUI" ]; then
 	# 安装ComfyUI
 	sudo git clone https://github.com/comfyanonymous/ComfyUI.git /opt/ComfyUI
 	cd /opt/ComfyUI || exit
-	sudo pip install -r requirements.txt
 	sudo pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu121
+ 	sudo pip install -r requirements.txt
 	cd /opt/ComfyUI || exit
 	git config --global --add safe.directory /opt/ComfyUI
 	current_hash=$(git rev-parse HEAD)
