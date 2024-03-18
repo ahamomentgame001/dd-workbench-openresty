@@ -22,7 +22,6 @@ if [ ! -d "/opt/ComfyUI" ]; then
 	# 写入元数据
 	gcloud workbench instances update ${instance_name} --metadata=${comfyui_key}=${current_hash} --project=${project} --location=${location_zone}
 	
-	
 else
   echo "ComfyUI已安装，跳过安装步骤。"
 fi
@@ -92,18 +91,18 @@ if [[ "$comfyui_ver" == "null" ]]; then
     sudo git fetch origin
     sudo git checkout master
     sudo git pull origin master
-	sudo pip install -r requirements.txt
-	sudo pip install --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cu121
-	# 重启服务
-	sudo systemctl restart comfyui.service
+    sudo pip install --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cu121
+    sudo pip install -r requirements.txt
+    # 重启服务
+    sudo systemctl restart comfyui.service
 elif [[ "$current_hash" != "$comfyui_ver" ]]; then
     echo "检测到ComfyUI新版本，正在升级..."
     sudo git fetch origin
     sudo git checkout "${comfyui_ver}"
-	sudo pip install -r requirements.txt
-	sudo pip install --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cu121
-	# 重启服务
-	sudo systemctl restart comfyui.service
+    sudo pip install --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cu121
+    sudo pip install -r requirements.txt
+    # 重启服务
+    sudo systemctl restart comfyui.service
 else
     echo "ComfyUI无需更新。"
 fi
