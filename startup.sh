@@ -9,18 +9,23 @@ instance_name=$(curl -s "http://metadata.google.internal/computeMetadata/v1/inst
 
 comfyui_key="comfyui-version"
 
-if [ ! -d "/opt/ComfyUI" ]; then
+home_dir="/home/jupyter/ComfyUI"
+
+
+if [ ! -d ${home_dir} ]; then
 	# 安装ComfyUI
-	sudo git clone https://github.com/comfyanonymous/ComfyUI.git /opt/ComfyUI
-	cd /opt/ComfyUI || exit
-	sudo pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu121
- 	sudo pip install -r requirements.txt
-	cd /opt/ComfyUI || exit
-	git config --global --add safe.directory /opt/ComfyUI
+	su - jupyter -c "git clone https://github.com/comfyanonymous/ComfyUI.git ${home_dir}"
+	cd ${home_dir} || exit
+    #echo 'PATH="$PATH:/home/jupyter/.local/bin"' >> /home/jupyter/.bashrc
+    #source /home/jupyter/.bashrc
+	su - jupyter -c "pip install --user --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu121"
+ 	su - jupyter -c "pip install --user -r ${home_dir}/requirements.txt"
+
+	git config --global --add safe.directory ${home_dir}
 	current_hash=$(git rev-parse HEAD)
 	
 	# 写入元数据
-	gcloud workbench instances update ${instance_name} --metadata=${comfyui_key}=${current_hash} --project=${project} --location=${location_zone}
+	sudo gcloud workbench instances update ${instance_name} --metadata=${comfyui_key}=${current_hash} --project=${project} --location=${location_zone}
 	
 else
   echo "ComfyUI已安装，跳过安装步骤。"
@@ -40,9 +45,9 @@ Description=ComfyUI Service
 After=network.target
 
 [Service]
-User=root
-WorkingDirectory=/opt/ComfyUI
-ExecStart=/usr/bin/python3 /opt/ComfyUI/main.py
+User=jupyter
+WorkingDirectory=/home/jupyter/ComfyUI
+ExecStart=/opt/conda/bin/python3 /home/jupyter/ComfyUI/main.py
 Restart=always
 
 [Install]
@@ -56,10 +61,40 @@ EOF'
 fi
 
 
+
+# 升级ComfyUI
+comfyui_ver=`curl -s -H "Metadata-Flavor: Google" "http://metadata/computeMetadata/v1/instance/attributes/${comfyui_key}"`
+cd ${home_dir} || exit
+git config --global --add safe.directory ${home_dir}
+current_hash=$(git rev-parse HEAD)
+
+if [[ "$comfyui_ver" == "null" ]]; then
+    echo "未指定ComfyUI版本，正在拉取master分支..."
+    git fetch origin
+    git checkout master
+    su - jupyter -c "git pull origin master"
+    su - jupyter -c "pip install --user --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cu121"
+    su - jupyter -c "pip install --user -r ${home_dir}/requirements.txt"
+    # 重启服务
+    sudo systemctl restart comfyui.service
+elif [[ "$current_hash" != "$comfyui_ver" ]]; then
+    echo "检测到ComfyUI新版本，正在升级..."
+    git fetch origin
+    git checkout "${comfyui_ver}"
+    su - jupyter -c "pip install --user --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cu121"
+    su - jupyter -c "pip install --user -r ${home_dir}/requirements.txt"
+    # 重启服务
+    sudo systemctl restart comfyui.service
+else
+    echo "ComfyUI无需更新。"
+fi
+
+
+
 # 挂载NFS
 NFS_address="10.250.132.58:/models"
 mountdir=`curl -s -H "Metadata-Flavor: Google" "http://metadata/computeMetadata/v1/instance/attributes/proxy-user-mail" | cut -d'@' -f1`
-check_point_dir="/opt/ComfyUI/models/checkpoints"
+check_point_dir="/home/jupyter/ComfyUI/models/checkpoints"
 
 # 检查/etc/fstab中是否已有挂载条目
 if grep -qs "${check_point_dir} " /etc/fstab; then
@@ -78,34 +113,6 @@ else
   sudo mount -o rw,intr ${NFS_address}/${mountdir} ${check_point_dir}
 fi
 
-
-
-# 升级ComfyUI
-comfyui_ver=`curl -s -H "Metadata-Flavor: Google" "http://metadata/computeMetadata/v1/instance/attributes/${comfyui_key}"`
-cd /opt/ComfyUI || exit
-git config --global --add safe.directory /opt/ComfyUI
-current_hash=$(git rev-parse HEAD)
-
-if [[ "$comfyui_ver" == "null" ]]; then
-    echo "未指定ComfyUI版本，正在拉取master分支..."
-    sudo git fetch origin
-    sudo git checkout master
-    sudo git pull origin master
-    sudo pip install --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cu121
-    sudo pip install -r requirements.txt
-    # 重启服务
-    sudo systemctl restart comfyui.service
-elif [[ "$current_hash" != "$comfyui_ver" ]]; then
-    echo "检测到ComfyUI新版本，正在升级..."
-    sudo git fetch origin
-    sudo git checkout "${comfyui_ver}"
-    sudo pip install --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cu121
-    sudo pip install -r requirements.txt
-    # 重启服务
-    sudo systemctl restart comfyui.service
-else
-    echo "ComfyUI无需更新。"
-fi
 
 
 # install openresty
