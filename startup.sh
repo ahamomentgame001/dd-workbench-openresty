@@ -13,20 +13,16 @@ home_dir="/home/jupyter/ComfyUI"
 
 
 if [ ! -d ${home_dir} ]; then
-	# 安装ComfyUI
-	su - jupyter -c "git clone https://github.com/comfyanonymous/ComfyUI.git ${home_dir}"
-	cd ${home_dir} || exit
-    #echo 'PATH="$PATH:/home/jupyter/.local/bin"' >> /home/jupyter/.bashrc
-    #source /home/jupyter/.bashrc
-	su - jupyter -c "pip install --user --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu121"
- 	su - jupyter -c "pip install --user -r ${home_dir}/requirements.txt"
+    # 安装ComfyUI
+    su - jupyter -c "git clone https://github.com/comfyanonymous/ComfyUI.git ${home_dir}"
 
-	git config --global --add safe.directory ${home_dir}
-	current_hash=$(git rev-parse HEAD)
-	
-	# 写入元数据
-	sudo gcloud workbench instances update ${instance_name} --metadata=${comfyui_key}=${current_hash} --project=${project} --location=${location_zone}
-	
+    su - jupyter -c "pip install --user --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu121"
+    su - jupyter -c "pip install --user -r ${home_dir}/requirements.txt"
+
+    su - jupyter -c "cd /home/jupyter/ComfyUI && git config --global --add safe.directory /home/jupyter/ComfyUI"
+    current_hash=$(su - jupyter -c "cd /home/jupyter/ComfyUI && git rev-parse HEAD")
+    su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=${comfyui_key}=${current_hash} --project=${project} --location=${location_zone}"
+
 else
   echo "ComfyUI已安装，跳过安装步骤。"
 fi
