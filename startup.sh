@@ -88,7 +88,7 @@ fi
 
 
 # 挂载NFS
-NFS_address="10.250.132.58:/models"
+NFS_address="10.97.68.98:/vol1"
 mountdir=`curl -s -H "Metadata-Flavor: Google" "http://metadata/computeMetadata/v1/instance/attributes/proxy-user-mail" | cut -d'@' -f1`
 check_point_dir="/home/jupyter/ComfyUI/models/checkpoints"
 
