@@ -10,17 +10,39 @@ instance_name=$(curl -s "http://metadata.google.internal/computeMetadata/v1/inst
 comfyui_key="comfyui-version"
 
 home_dir="/home/jupyter/ComfyUI"
-
+comfyui_manager_dir="/home/jupyter/ComfyUI/custom_nodes/ComfyUI-Manager"
 
 if [ ! -d ${home_dir} ]; then
     # 安装ComfyUI
     su - jupyter -c "git clone https://github.com/comfyanonymous/ComfyUI.git ${home_dir}"
+    su - jupyter -c "mv ${home_dir}/custom_nodes/ ${home_dir}/custom_nodes_example/ && mkdir ${home_dir}/custom_nodes/"
+    su - jupyter -c "git clone https://github.com/ltdrdata/ComfyUI-Manager.git ${comfyui_manager_dir}"
+    su - jupyter -c "cd ${home_dir} && python -m venv venv && source venv/bin/activate && pip install  torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121 && pip install  -r ${home_dir}/requirements.txt && pip install  -r ${home_dir}/custom_nodes/ComfyUI-Manager/requirements.txt"
+    #su - jupyter -c "pip install --user torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121"
+    #su - jupyter -c "pip install --user -r ${home_dir}/requirements.txt"
+    #su - jupyter -c "pip install --user -r ${home_dir}/custom_nodes/ComfyUI-Manager/requirements.txt"
 
-    su - jupyter -c "pip install --user --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu121"
-    su - jupyter -c "pip install --user -r ${home_dir}/requirements.txt"
 
-    su - jupyter -c "cd /home/jupyter/ComfyUI && git config --global --add safe.directory /home/jupyter/ComfyUI"
-    current_hash=$(su - jupyter -c "cd /home/jupyter/ComfyUI && git rev-parse HEAD")
+sudo bash -c 'cat > /home/jupyter/ComfyUI/run_gpu.sh <<EOF
+#!/bin/bash
+cd /home/jupyter/ComfyUI
+source venv/bin/activate
+python main.py --preview-method auto
+EOF'
+
+sudo chown jupyter:jupyter ${home_dir}/run_gpu.sh && sudo chmod +x ${home_dir}/run_gpu.sh
+
+sudo bash -c 'cat > /home/jupyter/ComfyUI/run_cpu.sh <<EOF
+#!/bin/bash
+cd /home/jupyter/ComfyUI
+source venv/bin/activate
+python main.py --preview-method auto --cpu
+EOF'
+
+sudo chown jupyter:jupyter ${home_dir}/run_cpu.sh && sudo chmod +x ${home_dir}/run_cpu.sh
+
+    su - jupyter -c "cd ${home_dir} && git config --global --add safe.directory ${home_dir}"
+    current_hash=$(su - jupyter -c "cd ${home_dir} && git rev-parse HEAD")
     su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=${comfyui_key}=${current_hash} --project=${project} --location=${location_zone}"
 
 else
