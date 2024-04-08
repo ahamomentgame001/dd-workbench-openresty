@@ -16,7 +16,7 @@ if [ ! -d ${home_dir} ]; then
     # 安装ComfyUI
     su - jupyter -c "git clone https://github.com/comfyanonymous/ComfyUI.git ${home_dir}"
     su - jupyter -c "mv ${home_dir}/custom_nodes/ ${home_dir}/custom_nodes_example/"
-    su - jupyter -c "sudo rm -rf ${HOME_DIR}/models/checkpoints && sudo rm -rf ${HOME_DIR}/models/loras && sudo rm -rf ${HOME_DIR}/models/controlnet && sudo rm -rf ${HOME_DIR}/custom_nodes && sudo rm -rf ${HOME_DIR}/output"
+    su - jupyter -c "rm -rf ${HOME_DIR}/models/checkpoints && rm -rf ${HOME_DIR}/models/loras && rm -rf ${HOME_DIR}/models/controlnet && rm -rf ${HOME_DIR}/custom_nodes && rm -rf ${HOME_DIR}/output"
 else
   echo "ComfyUI 已 clone,跳过此步骤."
 fi
@@ -65,11 +65,11 @@ if [ ! -d "${MNT_NFS_DIR}${PERSONS_NFS_DIR}" ]; then
 
   # 创建软链接
   echo "创建 ${PERSONS_NFS_DIR} 软链接."
-  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model" "${HOME_DIR}/models/checkpoints"
-  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model" "${HOME_DIR}/models/loras"
-  ln -s "${MNT_NFS_DIR}extension_controlnet/" "${HOME_DIR}/models/controlnet"
-  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions" "${HOME_DIR}/custom_nodes"
-  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs" "${HOME_DIR}/output"
+  su - jupyter -c "ln -s \"${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model\" \"${HOME_DIR}/models/checkpoints\" "
+  su - jupyter -c "ln -s \"${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model\" \"${HOME_DIR}/models/loras\" "
+  su - jupyter -c "ln -s \"${MNT_NFS_DIR}extension_controlnet/\" \"${HOME_DIR}/models/controlnet\" "
+  su - jupyter -c "ln -s \"${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions\" \"${HOME_DIR}/custom_nodes\" "
+  su - jupyter -c "ln -s \"${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs\" \"${HOME_DIR}/output\" "
 
   # 复制文件
   echo "复制 组内 文件."
@@ -83,11 +83,11 @@ if [ ! -d "${MNT_NFS_DIR}${PERSONS_NFS_DIR}" ]; then
 else
   # 创建软链接
   echo "仅创建 ${PERSONS_NFS_DIR} 软链接."
-  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model" "${HOME_DIR}/models/checkpoints"
-  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model" "${HOME_DIR}/models/loras"
-  ln -s "${MNT_NFS_DIR}extension_controlnet/" "${HOME_DIR}/models/controlnet"
-  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions" "${HOME_DIR}/custom_nodes"
-  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs" "${HOME_DIR}/output"
+  su - jupyter -c "ln -s \"${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model\" \"${HOME_DIR}/models/checkpoints\" "
+  su - jupyter -c "ln -s \"${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model\" \"${HOME_DIR}/models/loras\" "
+  su - jupyter -c "ln -s \"${MNT_NFS_DIR}extension_controlnet/\" \"${HOME_DIR}/models/controlnet\" "
+  su - jupyter -c "ln -s \"${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions\" \"${HOME_DIR}/custom_nodes\" "
+  su - jupyter -c "ln -s \"${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs\" \"${HOME_DIR}/output\" "
 fi
 
 
