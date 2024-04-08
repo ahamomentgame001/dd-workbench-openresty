@@ -15,13 +15,89 @@ comfyui_manager_dir="/home/jupyter/ComfyUI/custom_nodes/ComfyUI-Manager"
 if [ ! -d ${home_dir} ]; then
     # 安装ComfyUI
     su - jupyter -c "git clone https://github.com/comfyanonymous/ComfyUI.git ${home_dir}"
-    su - jupyter -c "mv ${home_dir}/custom_nodes/ ${home_dir}/custom_nodes_example/ && mkdir ${home_dir}/custom_nodes/"
+    su - jupyter -c "mv ${home_dir}/custom_nodes/ ${home_dir}/custom_nodes_example/"
+    su - jupyter -c "sudo rm -rf ${HOME_DIR}/models/checkpoints && sudo rm -rf ${HOME_DIR}/models/loras && sudo rm -rf ${HOME_DIR}/models/controlnet && sudo rm -rf ${HOME_DIR}/custom_nodes && sudo rm -rf ${HOME_DIR}/output"
+else
+  echo "ComfyUI 已 clone,跳过此步骤."
+fi
+
+
+
+# 挂载 NFS 目录
+NFS_ADDRESS="10.16.82.130:/vol1"
+HOME_DIR="/home/jupyter/ComfyUI"
+MNT_NFS_DIR="/mnt/nfs/"
+
+sudo mkdir -p "${MNT_NFS_DIR}"
+
+# 获取个人 NFS 目录的名称
+HOSTNAME=$(hostname)
+PERSONS_NFS_DIR=`echo ${HOSTNAME}| sed 's/-/\./g' | sed 's/^/accounts.google.com./g' | sed 's/$/\.com/'`
+
+# 检查 NFS 共享目录是否已挂载
+if mount | grep -q "${MNT_NFS_DIR}"; then
+  echo "NFS 共享目录已挂载到 ${MNT_NFS_DIR},跳过挂载步骤."
+else
+  # 挂载 NFS 共享目录
+  sudo apt-get install nfs-common -y
+  sudo mount -o rw,intr ${NFS_ADDRESS} ${MNT_NFS_DIR}
+fi
+
+# 检查 /etc/fstab 中是否已有挂载条目
+if grep -qs "${NFS_ADDRESS}" /etc/fstab; then
+  echo "${NFS_ADDRESS} 的挂载点已存在于 fstab 中,跳过添加."
+else
+  # 将挂载点添加到 /etc/fstab
+  echo "${NFS_ADDRESS} ${MNT_NFS_DIR} nfs rw,intr 0 0" | sudo tee -a /etc/fstab > /dev/null
+fi
+
+# 检查个人目录是否存在
+if [ ! -d "${MNT_NFS_DIR}${PERSONS_NFS_DIR}" ]; then
+  # 创建个人目录
+  echo "创建 ${PERSONS_NFS_DIR} 个人目录."
+  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model"
+  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/extensions"
+  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-config"
+  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model"
+  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions"
+  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs"
+  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/outputs"
+
+  # 创建软链接
+  echo "创建 ${PERSONS_NFS_DIR} 软链接."
+  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model" "${HOME_DIR}/models/checkpoints"
+  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model" "${HOME_DIR}/models/loras"
+  ln -s "${MNT_NFS_DIR}extension_controlnet/" "${HOME_DIR}/models/controlnet"
+  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions" "${HOME_DIR}/custom_nodes"
+  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs" "${HOME_DIR}/output"
+
+  # 复制文件
+  echo "复制 组内 文件."
+  cp -r "${MNT_NFS_DIR}sd-bigmodel/group_sd_models/MCC/sd_models/Stable-diffusion"/* "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model/"
+  cp -r "${MNT_NFS_DIR}sd-bigmodel/group_sd_models/MCC/sd_models/Lora"/* "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model/"
+  cp -r "${MNT_NFS_DIR}comfyui-extensions/group/MCC"/* "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions/"
+
+  # 添加权限
+  chmod -R 777 "${MNT_NFS_DIR}${PERSONS_NFS_DIR}"
+  
+else
+  # 创建软链接
+  echo "仅创建 ${PERSONS_NFS_DIR} 软链接."
+  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model" "${HOME_DIR}/models/checkpoints"
+  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model" "${HOME_DIR}/models/loras"
+  ln -s "${MNT_NFS_DIR}extension_controlnet/" "${HOME_DIR}/models/controlnet"
+  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions" "${HOME_DIR}/custom_nodes"
+  ln -s "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs" "${HOME_DIR}/output"
+fi
+
+
+if [ ! -d ${comfyui_manager_dir} ]; then
+    echo "安装ComfyUI & ComfyUI-Manager中"
     su - jupyter -c "git clone https://github.com/ltdrdata/ComfyUI-Manager.git ${comfyui_manager_dir}"
     su - jupyter -c "cd ${home_dir} && python -m venv venv && source venv/bin/activate && pip install  torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121 && pip install  -r ${home_dir}/requirements.txt && pip install  -r ${home_dir}/custom_nodes/ComfyUI-Manager/requirements.txt"
     #su - jupyter -c "pip install --user torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121"
     #su - jupyter -c "pip install --user -r ${home_dir}/requirements.txt"
     #su - jupyter -c "pip install --user -r ${home_dir}/custom_nodes/ComfyUI-Manager/requirements.txt"
-
 
 sudo bash -c 'cat > /home/jupyter/ComfyUI/run_gpu.sh <<EOF
 #!/bin/bash
@@ -46,14 +122,15 @@ sudo chown jupyter:jupyter ${home_dir}/run_cpu.sh && sudo chmod +x ${home_dir}/r
     su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=${comfyui_key}=${current_hash} --project=${project} --location=${location_zone}"
 
 else
-  echo "ComfyUI已安装，跳过安装步骤。"
+  echo "ComfyUI & ComfyUI-Manager已安装,跳过安装步骤."
 fi
+
 
 
 
 # 检查ComfyUI服务是否已存在
 if systemctl --all --type service | grep -q "comfyui.service"; then
-  echo "ComfyUI服务已存在，跳过创建步骤。"
+  echo "ComfyUI服务已存在,跳过创建步骤."
 else
   echo "创建ComfyUI服务..."
   # 创建Systemd服务单元
@@ -87,7 +164,7 @@ git config --global --add safe.directory ${home_dir}
 current_hash=$(git rev-parse HEAD)
 
 if [[ "$comfyui_ver" == "null" ]]; then
-    echo "未指定ComfyUI版本，正在拉取master分支..."
+    echo "未指定ComfyUI版本,正在拉取master分支."
     git fetch origin
     git checkout master
     su - jupyter -c "git pull origin master"
@@ -96,7 +173,7 @@ if [[ "$comfyui_ver" == "null" ]]; then
     # 重启服务
     sudo systemctl restart comfyui.service
 elif [[ "$current_hash" != "$comfyui_ver" ]]; then
-    echo "检测到ComfyUI新版本，正在升级..."
+    echo "检测到ComfyUI新版本,正在升级."
     git fetch origin
     git checkout "${comfyui_ver}"
     su - jupyter -c "pip install --user --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cu121"
@@ -104,37 +181,14 @@ elif [[ "$current_hash" != "$comfyui_ver" ]]; then
     # 重启服务
     sudo systemctl restart comfyui.service
 else
-    echo "ComfyUI无需更新。"
-fi
-
-
-
-# 挂载NFS
-NFS_address="10.97.68.98:/vol1"
-mountdir=`curl -s -H "Metadata-Flavor: Google" "http://metadata/computeMetadata/v1/instance/attributes/proxy-user-mail" | cut -d'@' -f1`
-check_point_dir="/home/jupyter/ComfyUI/models/checkpoints"
-
-# 检查/etc/fstab中是否已有挂载条目
-if grep -qs "${check_point_dir} " /etc/fstab; then
-  echo "${check_point_dir} 的挂载点已存在于fstab中，跳过添加。"
-else
-  echo "将 ${check_point_dir} 挂载点添加到/etc/fstab..."
-  echo "${NFS_address}/${mountdir} ${check_point_dir} nfs rw,intr 0 0" | sudo tee -a /etc/fstab > /dev/null
-fi
-
-# 检查挂载点是否已挂载
-if mount | grep -q "${check_point_dir}"; then
-  echo "${check_point_dir} 已挂载，跳过挂载步骤。"
-else
-  echo "挂载 ${check_point_dir}..."
-  sudo apt-get install nfs-common -y
-  sudo mount -o rw,intr ${NFS_address}/${mountdir} ${check_point_dir}
+    echo "ComfyUI无需更新."
 fi
 
 
 
 # install openresty
 if [ ! -d "/usr/local/openresty" ]; then
+  echo "安装openresty中."
   sudo apt-get -y install --no-install-recommends wget gnupg ca-certificates
   wget -O - https://openresty.org/package/pubkey.gpg | sudo apt-key add -
   codename=`grep -Po 'VERSION="[0-9]+ \(\K[^)]+' /etc/os-release`
@@ -151,3 +205,4 @@ if [ ! -d "/usr/local/openresty" ]; then
 else
   echo "openresty已安装,跳过安装步骤."
 fi
+
