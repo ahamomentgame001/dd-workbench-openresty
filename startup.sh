@@ -66,12 +66,12 @@ fi
 if [ ! -d "${mnt_nfs_dir}${persons_nfs_dir}" ]; then
   # 创建个人目录
   echo "创建 ${persons_nfs_dir} 个人目录."
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/custom-model/persons"
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/custom-model"
   mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/extensions"
   mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/sd-config"
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/sd-custom-model/persons"
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions/persons"
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs/persons"
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/sd-custom-model"
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions"
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs"
   mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/outputs"
 else
   echo "${persons_nfs_dir} 个人目录已存在."
