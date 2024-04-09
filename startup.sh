@@ -7,7 +7,14 @@ project=$(gcloud config get-value project)
 location_zone=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/zone" -H "Metadata-Flavor: Google" | cut -d'/' -f4)
 instance_name=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/name" -H "Metadata-Flavor: Google")
 
-group_name=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/group_name" -H "Metadata-Flavor: Google")
+group_name_code=$(curl -s -w "%{http_code}" -o /tmp/response.txt "http://metadata.google.internal/computeMetadata/v1/instance/attributes/group_name" -H "Metadata-Flavor: Google")
+
+if [ "$group_name_code" -eq 200 ]; then
+    group_name=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/group_name" -H "Metadata-Flavor: Google")
+else
+    group_name="null"
+fi
+
 
 comfyui_key="comfyui-version"
 
@@ -71,41 +78,54 @@ else
 fi
 
   # 检查是否存在 组 
-if [ -z "${GROUP_NAME}"]; then  
+if [[ "$GROUP_NAME" == "null" ]]; then
   # 组 ${GROUP_NAME} 参数为空
-  echo "创建 ${PERSONS_NFS_DIR} 软链接."
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model/persons ${HOME_DIR}/models/checkpoints"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model/persons ${HOME_DIR}/models/loras"
+  echo "创建 ${PERSONS_NFS_DIR} 全局和个人 软链接."
+
+  ##挂载models/checkpoint
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model ${HOME_DIR}/models/checkpoints/persons"
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/Stable-diffusion ${HOME_DIR}/models/checkpoints/global"
+
+  ##挂载models/loras
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model ${HOME_DIR}/models/loras/persons"
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/lora ${HOME_DIR}/models/loras/global"
+
+  ##挂载models/controlnet
   su - jupyter -c "ln -s ${MNT_NFS_DIR}extension_controlnet ${HOME_DIR}/models/controlnet"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions/persons ${HOME_DIR}/custom_nodes"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs/persons ${HOME_DIR}/output"
-  
-  echo "组为空，仅创建 全局 软链接."
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/Stable-diffusion/ ${HOME_DIR}/models/checkpoints"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/lora/ ${HOME_DIR}/models/checkpoints"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions/global/ ${HOME_DIR}/custom_nodes"
+
+  ##挂载 custom_nodes
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions ${HOME_DIR}/custom_nodes/persons"
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions/global ${HOME_DIR}/custom_nodes/global"
+
+  ##挂载 output
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs ${HOME_DIR}/output/persons"
 
   # 添加权限
   chmod -R 777 "${MNT_NFS_DIR}${PERSONS_NFS_DIR}"
 
 else
-  echo "创建 ${PERSONS_NFS_DIR} 软链接."
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model/persons ${HOME_DIR}/models/checkpoints"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model/persons ${HOME_DIR}/models/loras"
+  echo "创建 ${PERSONS_NFS_DIR} 全局、组和个人 软链接."
+  ##挂载models/checkpoint
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model ${HOME_DIR}/models/checkpoints/persons"
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/group_sd_models/${GROUP_NAME}/sd_models/Stable-diffusion ${HOME_DIR}/models/checkpoints/groups"
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/Stable-diffusion ${HOME_DIR}/models/checkpoints/global"
+
+  ##挂载models/loras
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model ${HOME_DIR}/models/loras/persons"
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/group_sd_models/${GROUP_NAME}/sd_models/Lora ${HOME_DIR}/models/loras/groups"
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/lora ${HOME_DIR}/models/loras/global"
+
+  ##挂载models/controlnet
   su - jupyter -c "ln -s ${MNT_NFS_DIR}extension_controlnet ${HOME_DIR}/models/controlnet"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions/persons ${HOME_DIR}/custom_nodes"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs/persons ${HOME_DIR}/output"
 
-  echo "创建 ${GROUP_NAME} 组 软链接."
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/group_sd_models/${GROUP_NAME}/sd_models/Stable-diffusion/ ${HOME_DIR}/models/checkpoints"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/group_sd_models/${GROUP_NAME}/sd_models/Lora/ ${HOME_DIR}/models/checkpoints"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions/group/${GROUP_NAME}/ ${HOME_DIR}/custom_nodes"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-outputs/global/ ${HOME_DIR}/output"
+  ##挂载 custom_nodes
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions/ ${HOME_DIR}/custom_nodes/persons"
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions/group/${GROUP_NAME}/ ${HOME_DIR}/custom_nodes/groups"
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions/global ${HOME_DIR}/custom_nodes/global"
 
-  echo "创建 全局 软链接."
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/Stable-diffusion/ ${HOME_DIR}/models/checkpoints"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/lora/ ${HOME_DIR}/models/checkpoints"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions/global/ ${HOME_DIR}/custom_nodes"
+  ##挂载 output
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs ${HOME_DIR}/output/persons"
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-outputs/global ${HOME_DIR}/output/groups"
 
   # 添加权限
   chmod -R 777 "${MNT_NFS_DIR}${PERSONS_NFS_DIR}"
@@ -147,7 +167,7 @@ After=network.target
 [Service]
 User=jupyter
 WorkingDirectory=/home/jupyter/ComfyUI
-ExecStart=source /home/jupyter/ComfyUI/venv/bin/activate && /opt/conda/bin/python3 /home/jupyter/ComfyUI/main.py
+ExecStart=/bin/bash -c 'cd /home/jupyter/ComfyUI/ && source venv/bin/activate && /home/jupyter/ComfyUI/venv/bin/python3 /home/jupyter/ComfyUI/main.py'
 Restart=always
 
 [Install]
@@ -167,6 +187,8 @@ comfyui_ver=`curl -s -H "Metadata-Flavor: Google" "http://metadata/computeMetada
 cd ${home_dir} || exit
 git config --global --add safe.directory ${home_dir}
 current_hash=$(git rev-parse HEAD)
+
+echo $comfyui_ver
 
 if [[ "$comfyui_ver" == "null" ]]; then
     echo "未指定ComfyUI版本,正在拉取master分支."
@@ -210,4 +232,3 @@ if [ ! -d "/usr/local/openresty" ]; then
 else
   echo "openresty已安装,跳过安装步骤."
 fi
-
