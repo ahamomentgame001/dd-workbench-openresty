@@ -193,21 +193,16 @@ echo "current_ver is ${current_hash}"
 
 if [[ "$comfyui_ver" == "null" ]]; then
     echo "未指定ComfyUI版本,正在拉取master分支."
-    #git fetch origin
-    #git checkout master
-    #su - jupyter -c "git pull origin master"
-    #su - jupyter -c "pip install --user --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cu121"
-    #su - jupyter -c "pip install --user -r ${home_dir}/requirements.txt"
+    su - jupyter -c "cd ${home_dir} && source venv/bin/activate && git fetch origi && git checkout master &&  git pull origin master"
+    su - jupyter -c "cd ${home_dir} && source venv/bin/activate && pip install  -r ${home_dir}/requirements.txt"
     # 重启服务
-    #sudo systemctl restart comfyui.service
+    sudo systemctl restart comfyui.service
 elif [[ "$current_hash" != "$comfyui_ver" ]]; then
     echo "检测到ComfyUI新版本,正在升级."
-    #git fetch origin
-    #git checkout "${comfyui_ver}"
-    #su - jupyter -c "pip install --user --pre torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/nightly/cu121"
-    #su - jupyter -c "pip install --user -r ${home_dir}/requirements.txt"
+    su - jupyter -c "cd ${home_dir} && source venv/bin/activate && git fetch origin && git checkout ${comfyui_ver} "
+    su - jupyter -c "cd ${home_dir} && source venv/bin/activate && pip install  -r ${home_dir}/requirements.txt"
     # 重启服务
-    #sudo systemctl restart comfyui.service
+    sudo systemctl restart comfyui.service
 else
     echo "ComfyUI无需更新."
 fi
