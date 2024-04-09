@@ -25,7 +25,7 @@ if [ ! -d ${home_dir} ]; then
     # 安装ComfyUI
     su - jupyter -c "git clone https://github.com/comfyanonymous/ComfyUI.git ${home_dir}"
     su - jupyter -c "mv ${home_dir}/custom_nodes/ ${home_dir}/custom_nodes_example/"
-    su - jupyter -c "rm -rf ${home_dir}/models/controlnet && rm -rf ${home_dir}/custom_nodes && rm -rf ${home_dir}/output"
+    su - jupyter -c "rm -rf ${home_dir}/models/controlnet"
     #su - jupyter -c "rm -rf ${home_dir}/models/checkpoints && rm -rf ${home_dir}/models/loras && rm -rf ${home_dir}/models/controlnet && rm -rf ${home_dir}/custom_nodes && rm -rf ${home_dir}/output"
 else
   echo "ComfyUI 已 clone,跳过此步骤."
@@ -34,101 +34,101 @@ fi
 
 
 # 挂载 NFS 目录
-NFS_ADDRESS="10.97.68.98:/vol1"
-#NFS_ADDRESS="10.16.82.130:/vol1"
+nfs_address="10.97.68.98:/vol1"
+#nfs_address="10.16.82.130:/vol1"
 
-MNT_NFS_DIR="/mnt/nfs/"
+mnt_nfs_dir="/mnt/nfs/"
 
-sudo mkdir -p "${MNT_NFS_DIR}"
+sudo mkdir -p "${mnt_nfs_dir}"
 
 # 获取个人 NFS 目录的名称
-HOSTNAME=$(hostname)
-PERSONS_NFS_DIR=`echo ${HOSTNAME}| sed 's/-/\./g' | sed 's/^/accounts.google.com./g' | sed 's/$/\.com/'`
+hostname=$(hostname)
+persons_nfs_dir=`echo ${hostname}| sed 's/-/\./g' | sed 's/^/accounts.google.com./g' | sed 's/$/\.com/'`
 
 # 检查 NFS 共享目录是否已挂载
-if mount | grep -q "${MNT_NFS_DIR}"; then
-  echo "NFS 共享目录已挂载到 ${MNT_NFS_DIR},跳过挂载步骤."
+if mount | grep -q "${mnt_nfs_dir}"; then
+  echo "NFS 共享目录已挂载到 ${mnt_nfs_dir},跳过挂载步骤."
 else
   # 挂载 NFS 共享目录
   sudo apt-get install nfs-common -y
-  sudo mount -o rw,intr ${NFS_ADDRESS} ${MNT_NFS_DIR}
+  sudo mount -o rw,intr ${nfs_address} ${mnt_nfs_dir}
 fi
 
 # 检查 /etc/fstab 中是否已有挂载条目
-if grep -qs "${NFS_ADDRESS}" /etc/fstab; then
-  echo "${NFS_ADDRESS} 的挂载点已存在于 fstab 中,跳过添加."
+if grep -qs "${nfs_address}" /etc/fstab; then
+  echo "${nfs_address} 的挂载点已存在于 fstab 中,跳过添加."
 else
   # 将挂载点添加到 /etc/fstab
-  echo "${NFS_ADDRESS} ${MNT_NFS_DIR} nfs rw,intr 0 0" | sudo tee -a /etc/fstab > /dev/null
+  echo "${nfs_address} ${mnt_nfs_dir} nfs rw,intr 0 0" | sudo tee -a /etc/fstab > /dev/null
 fi
 
 # 检查个人目录是否存在
-if [ ! -d "${MNT_NFS_DIR}${PERSONS_NFS_DIR}" ]; then
+if [ ! -d "${mnt_nfs_dir}${persons_nfs_dir}" ]; then
   # 创建个人目录
-  echo "创建 ${PERSONS_NFS_DIR} 个人目录."
-  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model/persons"
-  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/extensions"
-  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-config"
-  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model/persons"
-  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions/persons"
-  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs/persons"
-  mkdir -p "${MNT_NFS_DIR}${PERSONS_NFS_DIR}/outputs"
+  echo "创建 ${persons_nfs_dir} 个人目录."
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/custom-model/persons"
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/extensions"
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/sd-config"
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/sd-custom-model/persons"
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions/persons"
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs/persons"
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/outputs"
 else
-  echo "${PERSONS_NFS_DIR} 个人目录已存在."
+  echo "${persons_nfs_dir} 个人目录已存在."
 fi
 
   # 检查是否存在 组 
-if [[ "$GROUP_NAME" == "null" ]]; then
-  # 组 ${GROUP_NAME} 参数为空
-  echo "创建 ${PERSONS_NFS_DIR} 全局和个人 软链接."
+if [[ "$group_name" == "null" ]]; then
+  # 组 ${group_name} 参数为空
+  echo "创建 ${persons_nfs_dir} 全局和个人 软链接."
 
   ##挂载models/checkpoint
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model ${home_dir}/models/checkpoints/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/sd-custom-model ${home_dir}/models/checkpoints/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/global"
 
   ##挂载models/loras
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model ${home_dir}/models/loras/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/lora ${home_dir}/models/loras/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/custom-model ${home_dir}/models/loras/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/sd_models/lora ${home_dir}/models/loras/global"
 
   ##挂载models/controlnet
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}extension_controlnet ${home_dir}/models/controlnet"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}extension_controlnet ${home_dir}/models/controlnet"
 
   ##挂载 custom_nodes
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions ${home_dir}/custom_nodes/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions/global ${home_dir}/custom_nodes/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions ${home_dir}/custom_nodes/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-extensions/global ${home_dir}/custom_nodes/global"
 
   ##挂载 output
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs ${home_dir}/output/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output/persons"
 
   # 添加权限
-  chmod -R 777 "${MNT_NFS_DIR}${PERSONS_NFS_DIR}"
+  chmod -R 777 "${mnt_nfs_dir}${persons_nfs_dir}"
 
 else
-  echo "创建 ${PERSONS_NFS_DIR} 全局、组和个人 软链接."
+  echo "创建 ${persons_nfs_dir} 全局、组和个人 软链接."
   ##挂载models/checkpoint
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model ${home_dir}/models/checkpoints/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/group_sd_models/${GROUP_NAME}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/sd-custom-model ${home_dir}/models/checkpoints/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/global"
 
   ##挂载models/loras
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model ${home_dir}/models/loras/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/group_sd_models/${GROUP_NAME}/sd_models/Lora ${home_dir}/models/loras/groups"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/lora ${home_dir}/models/loras/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/custom-model ${home_dir}/models/loras/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Lora ${home_dir}/models/loras/groups"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/sd_models/lora ${home_dir}/models/loras/global"
 
   ##挂载models/controlnet
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}extension_controlnet ${home_dir}/models/controlnet"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}extension_controlnet ${home_dir}/models/controlnet"
 
   ##挂载 custom_nodes
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions/ ${home_dir}/custom_nodes/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions/group/${GROUP_NAME}/ ${home_dir}/custom_nodes/groups"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions/global ${home_dir}/custom_nodes/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions/ ${home_dir}/custom_nodes/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-extensions/group/${group_name}/ ${home_dir}/custom_nodes/groups"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-extensions/global ${home_dir}/custom_nodes/global"
 
   ##挂载 output
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs ${home_dir}/output/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-outputs/global ${home_dir}/output/groups"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-outputs/global ${home_dir}/output/groups"
 
   # 添加权限
-  chmod -R 777 "${MNT_NFS_DIR}${PERSONS_NFS_DIR}"
+  chmod -R 777 "${mnt_nfs_dir}${persons_nfs_dir}"
 fi
 
 
@@ -184,9 +184,8 @@ fi
 
 # 升级ComfyUI
 comfyui_ver=`curl -s -H "Metadata-Flavor: Google" "http://metadata/computeMetadata/v1/instance/attributes/${comfyui_key}"`
-cd ${home_dir} || exit
-git config --global --add safe.directory ${home_dir}
-current_hash=$(git rev-parse HEAD)
+su - jupyter -c "cd ${home_dir} && git config --global --add safe.directory ${home_dir}"
+current_hash=$(su - jupyter -c "cd ${home_dir} && git rev-parse HEAD")
 
 echo "comfyui_ver is ${comfyui_ver}"
 echo "current_ver is ${current_hash}"
