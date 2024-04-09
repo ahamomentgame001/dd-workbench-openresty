@@ -82,7 +82,7 @@ if [ -z "${GROUP_NAME}"]; then
   
   echo "组为空，仅创建 全局 软链接."
   su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/Stable-diffusion/ ${HOME_DIR}/models/checkpoints"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/lora/" ${HOME_DIR}/models/checkpoints"
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/lora/ ${HOME_DIR}/models/checkpoints"
   su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions/global/ ${HOME_DIR}/custom_nodes"
 
   # 添加权限
@@ -98,13 +98,13 @@ else
 
   echo "创建 ${GROUP_NAME} 组 软链接."
   su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/group_sd_models/${GROUP_NAME}/sd_models/Stable-diffusion/ ${HOME_DIR}/models/checkpoints"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/group_sd_models/${GROUP_NAME}/sd_models/Lora/" ${HOME_DIR}/models/checkpoints"
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/group_sd_models/${GROUP_NAME}/sd_models/Lora/ ${HOME_DIR}/models/checkpoints"
   su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions/group/${GROUP_NAME}/ ${HOME_DIR}/custom_nodes"
   su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-outputs/global/ ${HOME_DIR}/output"
 
   echo "创建 全局 软链接."
   su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/Stable-diffusion/ ${HOME_DIR}/models/checkpoints"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/lora/" ${HOME_DIR}/models/checkpoints"
+  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/lora/ ${HOME_DIR}/models/checkpoints"
   su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions/global/ ${HOME_DIR}/custom_nodes"
 
   # 添加权限
