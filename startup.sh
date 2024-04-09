@@ -80,55 +80,55 @@ fi
  # 检查是否存在 组 
 if [[ "$group_name" == "null" ]]; then
   # 组 ${group_name} 参数为空
-  echo "创建 ${PERSONS_NFS_DIR} 全局和个人 软链接."
+  echo "创建 ${persons_nfs_dir} 全局和个人 软链接."
 
   ##挂载models/checkpoint
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model ${HOME_DIR}/models/checkpoints/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/Stable-diffusion ${HOME_DIR}/models/checkpoints/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/sd-custom-model ${home_dir}/models/checkpoints/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/global"
 
   ##挂载models/loras
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model ${HOME_DIR}/models/loras/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/lora ${HOME_DIR}/models/loras/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/custom-model ${home_dir}/models/loras/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/sd_models/lora ${home_dir}/models/loras/global"
 
   ##挂载models/controlnet
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}extension_controlnet ${HOME_DIR}/models/controlnet"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}extension_controlnet ${home_dir}/models/controlnet"
 
   ##挂载 custom_nodes
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions ${HOME_DIR}/custom_nodes/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions ${HOME_DIR}/custom_nodes/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions ${home_dir}/custom_nodes/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-extensions ${home_dir}/custom_nodes/global"
 
   ##挂载 output
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs ${HOME_DIR}/output/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output/persons"
 
   # 添加权限
-  chmod -R 777 "${MNT_NFS_DIR}${PERSONS_NFS_DIR}"
+  chmod -R 777 "${mnt_nfs_dir}${persons_nfs_dir}"
 
 else
-  echo "创建 ${PERSONS_NFS_DIR} 全局、组和个人 软链接."
+  echo "创建 ${persons_nfs_dir} 全局、组和个人 软链接."
   ##挂载models/checkpoint 1
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/sd-custom-model ${HOME_DIR}/models/checkpoints/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/group_sd_models/${GROUP_NAME}/sd_models/Stable-diffusion ${HOME_DIR}/models/checkpoints/groups"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/Stable-diffusion ${HOME_DIR}/models/checkpoints/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/sd-custom-model ${home_dir}/models/checkpoints/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/global"
 
   ##挂载models/loras 1
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/custom-model ${HOME_DIR}/models/loras/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/group_sd_models/${GROUP_NAME}/sd_models/Lora ${HOME_DIR}/models/loras/groups"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}sd-bigmodel/sd_models/lora ${HOME_DIR}/models/loras/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/custom-model ${home_dir}/models/loras/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Lora ${home_dir}/models/loras/groups"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/sd_models/lora ${home_dir}/models/loras/global"
 
   ##挂载models/controlnet 1
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}extension_controlnet ${HOME_DIR}/models/controlnet"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}extension_controlnet ${home_dir}/models/controlnet"
 
   ##挂载 custom_nodes
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-extensions/ ${HOME_DIR}/custom_nodes/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions/group/${GROUP_NAME}/ ${HOME_DIR}/custom_nodes/groups"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-extensions ${HOME_DIR}/custom_nodes/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions/ ${home_dir}/custom_nodes/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-extensions/group/${group_name}/ ${home_dir}/custom_nodes/groups"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-extensions ${home_dir}/custom_nodes/global"
 
   ##挂载 output
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}${PERSONS_NFS_DIR}/comfyui-outputs ${HOME_DIR}/output/persons"
-  su - jupyter -c "ln -s ${MNT_NFS_DIR}comfyui-outputs ${HOME_DIR}/output/groups"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-outputs ${home_dir}/output/groups"
 
   # 添加权限
-  chmod -R 777 "${MNT_NFS_DIR}${PERSONS_NFS_DIR}"
+  chmod -R 777 "${mnt_nfs_dir}${persons_nfs_dir}"
 fi
 
 
