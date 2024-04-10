@@ -89,14 +89,14 @@ fi
 
   ## 挂载通用Models总目录
   echo "挂载通用Models总目录到${home_dir}/models"
-  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-models ${home_dir}/models"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}comfyui-models ${home_dir}/models"
   
  # 检查是否存在 组 
 if [[ "$group_name" == "null" ]]; then
   # 组 ${group_name} 参数为空
   echo "创建 ${persons_nfs_dir} 全局和个人 软链接."
   ##挂载 output
-  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
 
   # 添加权限
   chmod -R 777 "${mnt_nfs_dir}${persons_nfs_dir}"
@@ -104,14 +104,14 @@ if [[ "$group_name" == "null" ]]; then
 else
   echo "创建 ${persons_nfs_dir} 全局、组和个人 软链接."
   ##挂载models/checkpoint
-  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
 
   ##挂载models/loras
-  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Lora ${home_dir}/models/loras/groups"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Lora ${home_dir}/models/loras/groups"
 
   ##copy 组内插件 custom_nodes
   echo "copy 组内插件 custom_nodes"
-  su - jupyter -c "cp -r ${mnt_nfs_dir}/comfyui-extensions/group/${group_name} ${home_dir}/custom_nodes/"
+  su - jupyter -c "sudo cp -r ${mnt_nfs_dir}/comfyui-extensions/group/${group_name} ${home_dir}/custom_nodes/"
 
   ##挂载 output
   su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
