@@ -136,7 +136,8 @@ else
 fi
 
 # 从repos.txt文件中读取插件git仓库地址并安装
-while read -r repo_url; do
+sudo wget -O /tmp/repos.txt https://raw.githubusercontent.com/ahamomentgame001/dd-workbench-openresty/main/repos.txt
+while read -r /tmp/repos.txt; do
     repo_name=$(echo $repo_url | awk -F'/' '{print $NF}' | sed 's/.git//')
     comfyui_dir="${home_dir}/custom_nodes/${repo_name}"
 
