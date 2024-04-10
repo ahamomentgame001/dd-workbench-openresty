@@ -82,7 +82,9 @@ if [ ! -d "${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-outputs" ]; then
   mkdir -p "${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-outputs"
 fi
 
-
+# 添加权限
+chmod -R 777 "${mnt_nfs_dir}/${persons_nfs_dir}"
+  
  # 检查是否存在 组 
 if [[ "$group_name" == "null" ]]; then
   # 组 ${group_name} 参数为空
