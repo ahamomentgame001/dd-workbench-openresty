@@ -24,7 +24,8 @@ comfyui_manager_dir="/home/jupyter/ComfyUI/custom_nodes/ComfyUI-Manager"
 if [ ! -d ${home_dir} ]; then
     # 安装ComfyUI
     su - jupyter -c "git clone https://github.com/comfyanonymous/ComfyUI.git ${home_dir}"
-    su - jupyter -c "rm -rf ${home_dir}/models/controlnet"
+    su - jupyter -c "rm -rf ${home_dir}/models && rm -rf ${home_dir}/output"
+    #su - jupyter -c "rm -rf ${home_dir}/models/controlnet"
     #su - jupyter -c "mv ${home_dir}/custom_nodes/ ${home_dir}/custom_nodes_example/"
     #su - jupyter -c "rm -rf ${home_dir}/models/checkpoints && rm -rf ${home_dir}/models/loras && rm -rf ${home_dir}/models/controlnet && rm -rf ${home_dir}/custom_nodes && rm -rf ${home_dir}/output"
 else
@@ -35,11 +36,12 @@ fi
 
 # 挂载 NFS 目录
 nfs_address="10.97.68.98:/vol1"
-#nfs_address="10.16.82.130:/vol1"
 
-mnt_nfs_dir="/mnt/nfs/"
+mnt_nfs_dir="/mnt/sd-nfs-x/"
 
+if [ ! -d "${mnt_nfs_dir}" ]; then
 sudo mkdir -p "${mnt_nfs_dir}"
+fi
 
 # 获取个人 NFS 目录的名称
 hostname=$(hostname)
@@ -77,55 +79,42 @@ else
   echo "${persons_nfs_dir} 个人目录已存在."
 fi
 
+# 判断已有用户 comfyui-extensions 和 comfyui-outputs 文件夹
+if [ ! -d "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions" ]; then
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions"
+fi
+if [ ! -d "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs" ]; then
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs"
+fi
+
+  ## 挂载通用Models总目录
+  echo "挂载通用Models总目录到${home_dir}/models"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-models ${home_dir}/models"
+  
  # 检查是否存在 组 
 if [[ "$group_name" == "null" ]]; then
   # 组 ${group_name} 参数为空
   echo "创建 ${persons_nfs_dir} 全局和个人 软链接."
-
-  ##挂载models/checkpoint
-  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/sd-custom-model ${home_dir}/models/checkpoints/persons"
-  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/global"
-
-  ##挂载models/loras
-  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/custom-model ${home_dir}/models/loras/persons"
-  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/sd_models/lora ${home_dir}/models/loras/global"
-
-  ##挂载models/controlnet
-  su - jupyter -c "ln -s ${mnt_nfs_dir}extension_controlnet ${home_dir}/models/controlnet"
-
-  ##挂载 custom_nodes
-  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions ${home_dir}/custom_nodes/persons"
-  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-extensions ${home_dir}/custom_nodes/global"
-
   ##挂载 output
-  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output/persons"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
 
   # 添加权限
   chmod -R 777 "${mnt_nfs_dir}${persons_nfs_dir}"
 
 else
   echo "创建 ${persons_nfs_dir} 全局、组和个人 软链接."
-  ##挂载models/checkpoint 1
-  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/sd-custom-model ${home_dir}/models/checkpoints/persons"
+  ##挂载models/checkpoint
   su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
-  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/global"
 
-  ##挂载models/loras 1
-  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/custom-model ${home_dir}/models/loras/persons"
+  ##挂载models/loras
   su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Lora ${home_dir}/models/loras/groups"
-  su - jupyter -c "ln -s ${mnt_nfs_dir}sd-bigmodel/sd_models/lora ${home_dir}/models/loras/global"
 
-  ##挂载models/controlnet 1
-  su - jupyter -c "ln -s ${mnt_nfs_dir}extension_controlnet ${home_dir}/models/controlnet"
-
-  ##挂载 custom_nodes
-  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions/ ${home_dir}/custom_nodes/persons"
-  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-extensions/group/${group_name}/ ${home_dir}/custom_nodes/groups"
-  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-extensions ${home_dir}/custom_nodes/global"
+  ##copy 组内插件 custom_nodes
+  echo "copy 组内插件 custom_nodes"
+  su - jupyter -c "cp -r ${mnt_nfs_dir}/comfyui-extensions/group/${group_name} ${home_dir}/custom_nodes/"
 
   ##挂载 output
-  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output/persons"
-  su - jupyter -c "ln -s ${mnt_nfs_dir}comfyui-outputs ${home_dir}/output/groups"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
 
   # 添加权限
   chmod -R 777 "${mnt_nfs_dir}${persons_nfs_dir}"
@@ -135,20 +124,33 @@ fi
 
 
 if [ ! -d ${comfyui_manager_dir} ]; then
-    echo "安装ComfyUI & ComfyUI-Manager中"
-    su - jupyter -c "git clone https://github.com/ltdrdata/ComfyUI-Manager.git ${comfyui_manager_dir}"
-    su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install  torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121 && pip install  -r ${home_dir}/requirements.txt && pip install  -r ${home_dir}/custom_nodes/ComfyUI-Manager/requirements.txt"
-    #su - jupyter -c "pip install --user torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121"
-    #su - jupyter -c "pip install --user -r ${home_dir}/requirements.txt"
-    #su - jupyter -c "pip install --user -r ${home_dir}/custom_nodes/ComfyUI-Manager/requirements.txt"
+    echo "安装ComfyUI"
+    su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install  torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121 && pip install  -r ${home_dir}/requirements.txt"
 
     su - jupyter -c "cd ${home_dir} && git config --global --add safe.directory ${home_dir}"
     current_hash=$(su - jupyter -c "cd ${home_dir} && git rev-parse HEAD")
     su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=${comfyui_key}=${current_hash} --project=${project} --location=${location_zone}"
 
 else
-  echo "ComfyUI & ComfyUI-Manager已安装,跳过安装步骤."
+  echo "ComfyUI已安装,跳过安装步骤."
 fi
+
+# 从repos.txt文件中读取插件git仓库地址并安装
+while read -r repo_url; do
+    repo_name=$(echo $repo_url | awk -F'/' '{print $NF}' | sed 's/.git//')
+    comfyui_dir="${home_dir}/custom_nodes/${repo_name}"
+
+    # 检查目录是否存在
+    if [ ! -d "${comfyui_dir}" ]; then
+        echo "安装 ${repo_name} 中"
+        echo "su - jupyter -c \"git clone ${repo_url} ${comfyui_dir}\""
+
+        su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install -r ${home_dir}/requirements.txt && pip install -r ${comfyui_dir}/requirements.txt"
+        fi
+    else
+        echo "${repo_name} 已安装, 跳过安装步骤."
+    fi
+done < "repos.txt"
 
 
 
@@ -227,4 +229,14 @@ if [ ! -d "/usr/local/openresty" ]; then
 
 else
   echo "openresty已安装,跳过安装步骤."
+fi
+
+# 检查comfyui服务是否正常,添加metadata
+result=`systemctl is-active comfyui`
+if [[ $result = "active" ]]; then
+    echo "comfyui服务正常,添加metadata key"
+    su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=running --project=${project} --location=${location_zone}"
+else
+    echo "comfyui服务异常,添加metadata key,请检查服务"
+    su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=failed --project=${project} --location=${location_zone}"
 fi
