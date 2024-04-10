@@ -96,7 +96,7 @@ fi
  # 检查是否存在 组 
 if [[ "$group_name" == "null" ]]; then
   # 组 ${group_name} 参数为空
-  echo "挂载 全局 大模型 个人 软链接."
+  echo "挂载 全局 大模型 软链接."
   
   ##挂载全局 SD、lora和其他模型
   su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/checkpoints ${home_dir}/models/checkpoints/global"
