@@ -90,42 +90,54 @@ if [[ "$group_name" == "null" ]]; then
   # 组 ${group_name} 参数为空
   echo "创建 ${PERSONS_NFS_DIR} 全局和个人 软链接."
 
-  ##挂载models/checkpoint
-  su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/checkpoints ${home_dir}/models/checkpoints/global"
+  # 检查隐藏标识文件是否存在
+  if [[ ! -f /home/jupyter/.sd_link_created ]]; then
+    ##挂载models/checkpoint
+    su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/checkpoints ${home_dir}/models/checkpoints/global"
 
-  ##挂载models/loras
-  su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/loras ${home_dir}/models/loras/global"
+    ##挂载models/loras
+    su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/loras ${home_dir}/models/loras/global"
 
-  ##挂载models/controlnet
-  su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/controlnet ${home_dir}/models/controlnet"
-  
-  ##挂载其他模型
-  for model_dir in `ls ${mnt_nfs_dir}/comfyui-models/ |grep -v checkpoints|grep -v loras|grep -v controlnet`; do
-    su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/${model_dir} ${home_dir}/models/${model_dir}"
-  done
+    ##挂载models/controlnet
+    su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/controlnet ${home_dir}/models/controlnet"
+    
+    ##挂载其他模型
+    for model_dir in `ls ${mnt_nfs_dir}/comfyui-models/ |grep -v checkpoints|grep -v loras|grep -v controlnet`; do
+      su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/${model_dir} ${home_dir}/models/${model_dir}"
+    done
 
-  ##挂载output目录
-  su - jupyter -c "ln -s ${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
+    ##挂载output目录
+    su - jupyter -c "ln -s ${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
+
+    # 创建隐藏标识文件
+    touch /home/jupyter/.sd_link_created
+  fi
   
 else
-  ##挂载models/checkpoint
-  su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/checkpoints ${home_dir}/models/checkpoints/global"
-  su - jupyter -c "ln -s ${mnt_nfs_dir}/sd-bigmodel/group_sd_models/${group_name}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
+  # 检查隐藏标识文件是否存在
+  if [[ ! -f /home/jupyter/.sd_link_created ]]; then
+    ##挂载models/checkpoint
+    su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/checkpoints ${home_dir}/models/checkpoints/global"
+    su - jupyter -c "ln -s ${mnt_nfs_dir}/sd-bigmodel/group_sd_models/${group_name}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
 
-  ##挂载models/loras
-  su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/loras ${home_dir}/models/loras/global"
-  su - jupyter -c "ln -s ${mnt_nfs_dir}/sd-bigmodel/group_sd_models/${group_name}/sd_models/Lora ${home_dir}/models/loras/groups"
+    ##挂载models/loras
+    su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/loras ${home_dir}/models/loras/global"
+    su - jupyter -c "ln -s ${mnt_nfs_dir}/sd-bigmodel/group_sd_models/${group_name}/sd_models/Lora ${home_dir}/models/loras/groups"
 
-  ##挂载models/controlnet
-  su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/controlnet ${home_dir}/models/controlnet"
-  
-  ##挂载其他模型
-  for model_dir in `ls ${mnt_nfs_dir}/comfyui-models/ |grep -v checkpoints|grep -v loras|grep -v controlnet`; do
-    su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/${model_dir} ${home_dir}/models/${model_dir}"
-  done
+    ##挂载models/controlnet
+    su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/controlnet ${home_dir}/models/controlnet"
+    
+    ##挂载其他模型
+    for model_dir in `ls ${mnt_nfs_dir}/comfyui-models/ |grep -v checkpoints|grep -v loras|grep -v controlnet`; do
+      su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/${model_dir} ${home_dir}/models/${model_dir}"
+    done
 
-  ##挂载output目录
-  su - jupyter -c "ln -s ${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
+    ##挂载output目录
+    su - jupyter -c "ln -s ${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
+
+    # 创建隐藏标识文件
+    touch /home/jupyter/.sd_link_created
+  fi
   
 fi
 
@@ -144,33 +156,46 @@ else
   echo "ComfyUI已安装,跳过安装步骤."
 fi
 
-# 从repos.txt文件中读取插件git仓库地址并安装
-sudo wget -O /tmp/repos.txt https://raw.githubusercontent.com/ahamomentgame001/dd-workbench-openresty/main/repos.txt
-while read -r repo_url; do
-  repo_name=$(echo $repo_url | awk -F'/' '{print $NF}' | sed 's/.git//')
-  comfyui_dir="${home_dir}/custom_nodes/${repo_name}"
 
-  # 检查目录是否存在
-  if [ ! -d "${comfyui_dir}" ]; then
-    echo "安装 ${repo_name} 中"
-    echo "当前目录 ${comfyui_dir} "
+# 定义隐藏标记文件路径
+hidden_flag_file="/home/jupyter/.comfyui_installed"
 
-    # 判断 requirements.txt 是否存在
-    if [[ "${repo_name}" == "ComfyUI_UltimateSDUpscale" ]]; then
-      su - jupyter -c "git clone ${repo_url} ${comfyui_dir} --recursive"
+# 检查隐藏标记文件是否存在
+if [ ! -f "${hidden_flag_file}" ]; then
+  echo "首次运行，开始安装依赖..."
+  sudo wget -O /tmp/repos.txt https://raw.githubusercontent.com/ahamomentgame001/dd-workbench-openresty/main/repos.txt
+  
+  while read -r repo_url; do
+    repo_name=$(echo $repo_url | awk -F'/' '{print $NF}' | sed 's/.git//')
+    comfyui_dir="${home_dir}/custom_nodes/${repo_name}"
+
+    # 检查目录是否存在
+    if [ ! -d "${comfyui_dir}" ]; then
+      echo "安装 ${repo_name} 中"
+      echo "当前 ${comfyui_dir} 目录"
+
+      # 判断 requirements.txt 是否存在
+      if [[ "${repo_name}" == "ComfyUI_UltimateSDUpscale" ]]; then
+        su - jupyter -c "git clone ${repo_url} ${comfyui_dir} --recursive"
+      else
+        su - jupyter -c "git clone ${repo_url} ${comfyui_dir}"
+      fi
+      
+      if [ -f "${comfyui_dir}/requirements.txt" ]; then
+        su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install -r ${comfyui_dir}/requirements.txt"
+      else
+        echo "警告: ${comfyui_dir}/requirements.txt 不存在,跳过依赖安装."
+      fi
     else
-      su - jupyter -c "git clone ${repo_url} ${comfyui_dir}"
+      echo "${repo_name} 已安装, 跳过安装步骤."
     fi
-    
-    if [ -f "${comfyui_dir}/requirements.txt" ]; then
-      su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install -r ${comfyui_dir}/requirements.txt"
-    else
-      echo "警告: ${comfyui_dir}/requirements.txt 不存在,跳过依赖安装."
-    fi
-  else
-    echo "${repo_name} 已安装, 跳过安装步骤."
-  fi
-done < "/tmp/repos.txt"
+  done < "/tmp/repos.txt"
+
+  # 创建隐藏标记文件
+  touch "${hidden_flag_file}"
+else
+  echo "检测到已安装标记，跳过依赖安装过程..."
+fi
 
 
 
