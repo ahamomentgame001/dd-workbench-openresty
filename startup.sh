@@ -116,7 +116,7 @@ chmod -R 777 "${mnt_nfs_dir}${persons_nfs_dir}"
 
 
 
-if [ ! -d ${home_dir} ]; then
+if [ ! -d ${comfyui_manager_dir} ]; then
     echo "安装ComfyUI"
     su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install  torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121 && pip install  -r ${home_dir}/requirements.txt"
 
