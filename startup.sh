@@ -66,20 +66,20 @@ else
 fi
 
 # 检查个人目录是否存在
-if [ ! -d "${mnt_nfs_dir}${persons_nfs_dir}" ]; then
+if [ ! -d "${mnt_nfs_dir}/${persons_nfs_dir}" ]; then
   # 创建个人目录
   echo "创建 ${persons_nfs_dir} 个人目录."
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/{custom-model,extensions,sd-config,sd-custom-model,comfyui-extensions,comfyui-outputs,outputs}"
+  mkdir -p "${mnt_nfs_dir}/${persons_nfs_dir}/{custom-model,extensions,sd-config,sd-custom-model,comfyui-extensions,comfyui-outputs,outputs}"
 else
   echo "${persons_nfs_dir} 个人目录已存在."
 fi
 
 # 判断已有用户 comfyui-extensions 和 comfyui-outputs 文件夹
-if [ ! -d "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions" ]; then
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions"
+if [ ! -d "${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-extensions" ]; then
+  mkdir -p "${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-extensions"
 fi
-if [ ! -d "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs" ]; then
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs"
+if [ ! -d "${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-outputs" ]; then
+  mkdir -p "${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-outputs"
 fi
 
 
@@ -100,8 +100,10 @@ if [[ "$group_name" == "null" ]]; then
   ##挂载其他模型
   for model_dir in `ls ${mnt_nfs_dir}/comfyui-models/ |grep -v checkpoints|grep -v loras|grep -v controlnet`; do
     su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/${model_dir} ${home_dir}/models/${model_dir}"
-    #su - jupyter -c "sudo unlink ${home_dir}/models/${model_dir}"
   done
+
+  ##挂载output目录
+  su - jupyter -c "ln -s ${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
   
 else
   ##挂载models/checkpoint
@@ -118,8 +120,11 @@ else
   ##挂载其他模型
   for model_dir in `ls ${mnt_nfs_dir}/comfyui-models/ |grep -v checkpoints|grep -v loras|grep -v controlnet`; do
     su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/${model_dir} ${home_dir}/models/${model_dir}"
-    #su - jupyter -c "sudo unlink ${home_dir}/models/${model_dir}"
   done
+
+  ##挂载output目录
+  su - jupyter -c "ln -s ${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
+  
 fi
 
 
