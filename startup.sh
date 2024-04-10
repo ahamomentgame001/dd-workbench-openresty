@@ -24,7 +24,7 @@ comfyui_manager_dir="/home/jupyter/ComfyUI/custom_nodes/ComfyUI-Manager"
 if [ ! -d ${home_dir} ]; then
     # 安装ComfyUI
     su - jupyter -c "git clone https://github.com/comfyanonymous/ComfyUI.git ${home_dir}"
-    su - jupyter -c "cd ${home_dir}/models && find . -maxdepth 1 -type d ! -name checkpoints ! -name loras ! -name controlnet -exec rm -rf {} +"
+    su - jupyter -c "cd ${home_dir}/models && find . -maxdepth 1 -type d ! -name checkpoints ! -name loras  -exec rm -rf {} +"
     su - jupyter -c "rm -rf ${home_dir}/output"
     #su - jupyter -c "rm -rf ${home_dir}/models/controlnet"
     #su - jupyter -c "mv ${home_dir}/custom_nodes/ ${home_dir}/custom_nodes_example/"
@@ -38,7 +38,7 @@ fi
 # 挂载 NFS 目录
 nfs_address="10.97.68.98:/vol1"
 
-mnt_nfs_dir="/mnt/sd-nfs-x/"
+mnt_nfs_dir="/mnt/sd-nfs-x"
 
 if [ ! -d "${mnt_nfs_dir}" ]; then
 sudo mkdir -p "${mnt_nfs_dir}"
@@ -84,34 +84,43 @@ fi
 
 
  # 检查是否存在 组 
-# Mount global and/or group models based on group name
 if [[ "$group_name" == "null" ]]; then
-  echo "Mounting global models..."
-  # Mount global SD, Lora, and other models
-  for model_dir in checkpoints loras configs clip clip_vision diffusers embeddings gligen hypernetworks inpaint insightface ipadapter photomaker sams style_models ultralytics unet upscale_models vae vae_approx; do
-    su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/${model_dir} ${home_dir}/models/${model_dir}/global"
-  done
-else
-  echo "Mounting global and group models..."
-  # Mount group SD and Lora models
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/sd-bigmodel/group_sd_models/${group_name}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/sd-bigmodel/group_sd_models/${group_name}/sd_models/Lora ${home_dir}/models/loras/groups"
+  # 组 ${group_name} 参数为空
+  echo "创建 ${PERSONS_NFS_DIR} 全局和个人 软链接."
+
+  ##挂载models/checkpoint
+  su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/checkpoints ${home_dir}/models/checkpoints/global"
+
+  ##挂载models/loras
+  su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/loras ${home_dir}/models/loras/global"
+
+  ##挂载models/controlnet
+  su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/controlnet ${home_dir}/models/controlnet"
   
-  # Mount global models (same loop as before)
-  for model_dir in configs clip clip_vision diffusers embeddings gligen hypernetworks inpaint insightface ipadapter photomaker sams style_models ultralytics unet upscale_models vae vae_approx; do
+  ##挂载其他模型
+  for model_dir in `ls ${mnt_nfs_dir}/comfyui-models/ |grep -v checkpoints|grep -v loras|grep -v controlnet`; do
     su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/${model_dir} ${home_dir}/models/${model_dir}"
+    #su - jupyter -c "sudo unlink ${home_dir}/models/${model_dir}"
   done
   
-  # Copy group custom nodes
-  echo "Copying group custom nodes..."
-  su - jupyter -c "sudo cp -r ${mnt_nfs_dir}/comfyui-extensions/group/${group_name} ${home_dir}/custom_nodes/"
+else
+  ##挂载models/checkpoint
+  su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/checkpoints ${home_dir}/models/checkpoints/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}/sd-bigmodel/group_sd_models/${group_name}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
+
+  ##挂载models/loras
+  su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/loras ${home_dir}/models/loras/global"
+  su - jupyter -c "ln -s ${mnt_nfs_dir}/sd-bigmodel/group_sd_models/${group_name}/sd_models/Lora ${home_dir}/models/loras/groups"
+
+  ##挂载models/controlnet
+  su - jupyter -c "ln -s ${mnt_nfs_dir}/comfyui-models/controlnet ${home_dir}/models/controlnet"
+  
+  ##挂载其他模型
+  for model_dir in `ls ${mnt_nfs_dir}/comfyui-models/ |grep -v checkpoints|grep -v loras|grep -v controlnet`; do
+    su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/${model_dir} ${home_dir}/models/${model_dir}"
+    #su - jupyter -c "sudo unlink ${home_dir}/models/${model_dir}"
+  done
 fi
-
-# Mount output directory
-su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
-
-# Set permissions
-chmod -R 777 "${mnt_nfs_dir}${persons_nfs_dir}"
 
 
 
@@ -140,6 +149,8 @@ while read -r repo_url; do
         echo "当前 ${comfyui_dir} 目录"
 
     # 判断 requirements.txt 是否存在
+        su - jupyter -c "git clone ${repo_url} ${comfyui_dir}"
+        
         if [ -f "${comfyui_dir}/requirements.txt" ]; then
           su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install -r ${comfyui_dir}/requirements.txt"
         else
