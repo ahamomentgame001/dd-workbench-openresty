@@ -69,13 +69,7 @@ fi
 if [ ! -d "${mnt_nfs_dir}${persons_nfs_dir}" ]; then
   # 创建个人目录
   echo "创建 ${persons_nfs_dir} 个人目录."
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/custom-model"
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/extensions"
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/sd-config"
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/sd-custom-model"
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-extensions"
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs"
-  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/outputs"
+  mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/{custom-model,extensions,sd-config,sd-custom-model,comfyui-extensions,comfyui-outputs,outputs}"
 else
   echo "${persons_nfs_dir} 个人目录已存在."
 fi
@@ -88,84 +82,36 @@ if [ ! -d "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs" ]; then
   mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs"
 fi
 
-## 挂载通用Models总目录
-#echo "挂载通用Models总目录到${home_dir}/models"
-#su - jupyter -c "sudo ln -s ${mnt_nfs_dir}comfyui-models ${home_dir}/models"
 
-  
  # 检查是否存在 组 
+# Mount global and/or group models based on group name
 if [[ "$group_name" == "null" ]]; then
-  # 组 ${group_name} 参数为空
-  echo "挂载 全局 大模型 软链接."
-  
-  ##挂载全局 SD、lora和其他模型
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/checkpoints ${home_dir}/models/checkpoints/global"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/loras ${home_dir}/models/loras/global"
-
-  ##挂载全局 configs和其他模型
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/configs ${home_dir}/models/configs"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/clip ${home_dir}/models/clip"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/clip_vision ${home_dir}/models/clip_vision"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/diffusers ${home_dir}/models/diffusers"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/embeddings ${home_dir}/models/embeddings"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/gligen ${home_dir}/models/gligen"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/hypernetworks ${home_dir}/models/hypernetworks"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/inpaint ${home_dir}/models/inpaint"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/insightface ${home_dir}/models/insightface"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/ipadapter ${home_dir}/models/ipadapter"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/photomaker ${home_dir}/models/photomaker"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/sams ${home_dir}/models/sams"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/style_models ${home_dir}/models/style_models"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/ultralytics ${home_dir}/models/ultralytics"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/unet ${home_dir}/models/unet"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/upscale_models ${home_dir}/models/upscale_models"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/vae ${home_dir}/models/vae"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/vae_approx ${home_dir}/models/vae_approx"
-  
-
-  ##挂载 output
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
-
-  # 添加权限
-  chmod -R 777 "${mnt_nfs_dir}${persons_nfs_dir}"
-
+  echo "Mounting global models..."
+  # Mount global SD, Lora, and other models
+  for model_dir in checkpoints loras configs clip clip_vision diffusers embeddings gligen hypernetworks inpaint insightface ipadapter photomaker sams style_models ultralytics unet upscale_models vae vae_approx; do
+    su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/${model_dir} ${home_dir}/models/${model_dir}/global"
+  done
 else
-  echo "挂载 全局 和 组 大模型 软链接."
-
-  ##挂载组内 SD、lora模型
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Lora ${home_dir}/models/loras/groups"
-
-  ##挂载全局 configs和其他模型
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/configs ${home_dir}/models/configs"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/clip ${home_dir}/models/clip"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/clip_vision ${home_dir}/models/clip_vision"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/diffusers ${home_dir}/models/diffusers"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/embeddings ${home_dir}/models/embeddings"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/gligen ${home_dir}/models/gligen"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/hypernetworks ${home_dir}/models/hypernetworks"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/inpaint ${home_dir}/models/inpaint"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/insightface ${home_dir}/models/insightface"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/ipadapter ${home_dir}/models/ipadapter"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/photomaker ${home_dir}/models/photomaker"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/sams ${home_dir}/models/sams"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/style_models ${home_dir}/models/style_models"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/ultralytics ${home_dir}/models/ultralytics"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/unet ${home_dir}/models/unet"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/upscale_models ${home_dir}/models/upscale_models"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/vae ${home_dir}/models/vae"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/vae_approx ${home_dir}/models/vae_approx"
+  echo "Mounting global and group models..."
+  # Mount group SD and Lora models
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/sd-bigmodel/group_sd_models/${group_name}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/sd-bigmodel/group_sd_models/${group_name}/sd_models/Lora ${home_dir}/models/loras/groups"
   
-  ##copy 组内插件 custom_nodes
-  echo "copy 组内插件 custom_nodes"
+  # Mount global models (same loop as before)
+  for model_dir in configs clip clip_vision diffusers embeddings gligen hypernetworks inpaint insightface ipadapter photomaker sams style_models ultralytics unet upscale_models vae vae_approx; do
+    su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/${model_dir} ${home_dir}/models/${model_dir}"
+  done
+  
+  # Copy group custom nodes
+  echo "Copying group custom nodes..."
   su - jupyter -c "sudo cp -r ${mnt_nfs_dir}/comfyui-extensions/group/${group_name} ${home_dir}/custom_nodes/"
-
-  ##挂载 output
-  su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
-
-  # 添加权限
-  chmod -R 777 "${mnt_nfs_dir}${persons_nfs_dir}"
 fi
+
+# Mount output directory
+su - jupyter -c "ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
+
+# Set permissions
+chmod -R 777 "${mnt_nfs_dir}${persons_nfs_dir}"
 
 
 
