@@ -24,7 +24,8 @@ comfyui_manager_dir="/home/jupyter/ComfyUI/custom_nodes/ComfyUI-Manager"
 if [ ! -d ${home_dir} ]; then
     # 安装ComfyUI
     su - jupyter -c "git clone https://github.com/comfyanonymous/ComfyUI.git ${home_dir}"
-    su - jupyter -c "rm -rf ${home_dir}/models && rm -rf ${home_dir}/output"
+    su - jupyter -c "cd ${home_dir}/models && find . -maxdepth 1 -type d ! -name checkpoints ! -name loras ! -name controlnet -exec rm -rf {} +"
+    su - jupyter -c "rm -rf ${home_dir}/output"
     #su - jupyter -c "rm -rf ${home_dir}/models/controlnet"
     #su - jupyter -c "mv ${home_dir}/custom_nodes/ ${home_dir}/custom_nodes_example/"
     #su - jupyter -c "rm -rf ${home_dir}/models/checkpoints && rm -rf ${home_dir}/models/loras && rm -rf ${home_dir}/models/controlnet && rm -rf ${home_dir}/custom_nodes && rm -rf ${home_dir}/output"
@@ -87,14 +88,39 @@ if [ ! -d "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs" ]; then
   mkdir -p "${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs"
 fi
 
-  ## 挂载通用Models总目录
-  echo "挂载通用Models总目录到${home_dir}/models"
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}comfyui-models ${home_dir}/models"
+## 挂载通用Models总目录
+#echo "挂载通用Models总目录到${home_dir}/models"
+#su - jupyter -c "sudo ln -s ${mnt_nfs_dir}comfyui-models ${home_dir}/models"
+
   
  # 检查是否存在 组 
 if [[ "$group_name" == "null" ]]; then
   # 组 ${group_name} 参数为空
   echo "创建 ${persons_nfs_dir} 全局和个人 软链接."
+  
+  ##挂载全局 SD、lora和其他模型
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/checkpoints ${home_dir}/models/checkpoints/global"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/loras ${home_dir}/models/loras/global"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/clip ${home_dir}/models/clip"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/clip_vision ${home_dir}/models/clip_vision"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/configs ${home_dir}/models/configs"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/diffusers ${home_dir}/models/diffusers"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/embeddings ${home_dir}/models/embeddings"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/gligen ${home_dir}/models/gligen"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/hypernetworks ${home_dir}/models/hypernetworks"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/inpaint ${home_dir}/models/inpaint"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/insightface ${home_dir}/models/insightface"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/ipadapter ${home_dir}/models/ipadapter"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/photomaker ${home_dir}/models/photomaker"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/sams ${home_dir}/models/sams"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/style_models ${home_dir}/models/style_models"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/ultralytics ${home_dir}/models/ultralytics"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/unet ${home_dir}/models/unet"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/upscale_models ${home_dir}/models/upscale_models"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/vae ${home_dir}/models/vae"
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}/comfyui-models/vae_approx ${home_dir}/models/vae_approx"
+  
+
   ##挂载 output
   su - jupyter -c "sudo ln -s ${mnt_nfs_dir}${persons_nfs_dir}/comfyui-outputs ${home_dir}/output"
 
@@ -103,10 +129,11 @@ if [[ "$group_name" == "null" ]]; then
 
 else
   echo "创建 ${persons_nfs_dir} 全局、组和个人 软链接."
-  ##挂载models/checkpoint
-  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
 
-  ##挂载models/loras
+  #挂载 组内 SD、lora模型
+
+  ##挂载组内 SD、lora模型
+  su - jupyter -c "sudo ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Stable-diffusion ${home_dir}/models/checkpoints/groups"
   su - jupyter -c "sudo ln -s ${mnt_nfs_dir}sd-bigmodel/group_sd_models/${group_name}/sd_models/Lora ${home_dir}/models/loras/groups"
 
   ##copy 组内插件 custom_nodes
@@ -123,7 +150,7 @@ fi
 
 
 
-if [ ! -d ${comfyui_manager_dir} ]; then
+if [ ! -d ${home_dir} ]; then
     echo "安装ComfyUI"
     su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install  torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121 && pip install  -r ${home_dir}/requirements.txt"
 
@@ -145,13 +172,17 @@ while read -r repo_url; do
     if [ ! -d "${comfyui_dir}" ]; then
         echo "安装 ${repo_name} 中"
         echo "当前 ${comfyui_dir} 目录"
-        echo "su - jupyter -c \"git clone ${repo_url} ${comfyui_dir}\""
 
-        su - jupyter -c "git clone ${repo_url} ${comfyui_dir}"
-        su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install -r ${home_dir}/requirements.txt && pip install -r ${comfyui_dir}/requirements.txt"
+    # 判断 requirements.txt 是否存在
+        if [ -f "${comfyui_dir}/requirements.txt" ]; then
+          su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install -r ${comfyui_dir}/requirements.txt"
+        else
+          echo "警告: ${comfyui_dir}/requirements.txt 不存在,跳过依赖安装."
+        fi
     else
-        echo "${repo_name} 已安装, 跳过安装步骤."
-    fi
+    
+    echo "${repo_name} 已安装, 跳过安装步骤."
+  fi
 done < "/tmp/repos.txt"
 
 
