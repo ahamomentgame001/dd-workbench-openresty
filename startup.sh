@@ -69,7 +69,9 @@ fi
 if [ ! -d "${mnt_nfs_dir}/${persons_nfs_dir}" ]; then
   # 创建个人目录
   echo "创建 ${persons_nfs_dir} 个人目录."
-  mkdir -p "${mnt_nfs_dir}/${persons_nfs_dir}/{custom-model,extensions,sd-config,sd-custom-model,comfyui-extensions,comfyui-outputs,outputs}"
+  mkdir -p "${mnt_nfs_dir}/${persons_nfs_dir}/"{custom-model,extensions,sd-config,sd-custom-model,comfyui-extensions,comfyui-outputs,outputs}
+  # 添加权限
+  chmod -R 777 "${mnt_nfs_dir}/${persons_nfs_dir}"
 else
   echo "${persons_nfs_dir} 个人目录已存在."
 fi
@@ -77,13 +79,15 @@ fi
 # 判断已有用户 comfyui-extensions 和 comfyui-outputs 文件夹
 if [ ! -d "${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-extensions" ]; then
   mkdir -p "${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-extensions"
+  # 添加权限
+  chmod -R 777 "${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-extensions"
 fi
 if [ ! -d "${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-outputs" ]; then
   mkdir -p "${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-outputs"
+  # 添加权限
+  chmod -R 777 "${mnt_nfs_dir}/${persons_nfs_dir}/comfyui-outputs"
 fi
 
-# 添加权限
-chmod -R 777 "${mnt_nfs_dir}/${persons_nfs_dir}"
   
  # 检查是否存在 组 
 if [[ "$group_name" == "null" ]]; then
