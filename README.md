@@ -20,8 +20,8 @@ NFS_address="10.97.68.98:/vol1"
 ## 实例自定义metadata说明
 ### 自定义metadata
 
-| key        | value   |  说明  |
-| :--------  | :-----  | :----:  |
-| comfyui-status | running or failed|comfyui运行状态|
-| group_name | MCC or null |用户是否在某个组内|
-| comfyui-version | 4201181b35402e0a992b861f8d2f0e0b267f52fa |comfyui github master commit id|
+| key        |type| value   |  说明  |
+| :--------  |---:| :-----  | :----:  |
+| comfyui-status |string| "running" or "failed"|comfyui运行状态|
+| group_name |string|"MCC" or null |用户是否在某个组内, 组名为全大写英文|
+| comfyui-version |string| "4201181b35402e0a992b861f8d2f0e0b267f52fa" |comfyui github master commit id|
