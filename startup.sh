@@ -280,12 +280,33 @@ else
   echo "openresty已安装,跳过安装步骤."
 fi
 
-# 检查comfyui服务是否正常,添加metadata
-result=`systemctl is-active comfyui`
-if [[ $result = "active" ]]; then
-    echo "comfyui服务正常,添加metadata key"
-    su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=running --project=${project} --location=${location_zone}"
+# 拉取最新 nginx.conf & last_activity.lua 文件
+echo "拉取最新 nginx.conf & last_activity.lua 文件"
+sudo wget -O /usr/local/openresty/nginx/conf/nginx.conf https://raw.githubusercontent.com/ahamomentgame001/dd-workbench-openresty/main/nginx.conf
+sudo wget -O /usr/local/openresty/lualib/last_activity.lua https://raw.githubusercontent.com/ahamomentgame001/dd-workbench-openresty/main/last_activity.lua
+echo "nginx.conf & last_activity.lua 文件更新完成."
+
+# 重启 openresty 服务
+echo "重启 openresty 服务..."
+sudo systemctl reload openresty
+
+# 检查 openresty服务状态
+if [[ `systemctl is-active openresty` = "active" ]]; then
+    echo "openresty服务正常."
 else
-    echo "comfyui服务异常,添加metadata key,请检查服务"
-    su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=failed --project=${project} --location=${location_zone}"
+    echo "openresty服务异常,请检查服务."
+fi
+
+
+
+# 检查comfyui服务是否正常,添加metadata
+if [[ `systemctl is-active comfyui` = "active" ]]; then
+  echo "comfyui服务正常,添加metadata key:comfyui-status=running"
+  su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=running --project=${project} --location=${location_zone}"
+elif [[ `systemctl is-failed comfyui` = "failed" ]]; then
+  echo "comfyui服务异常,添加metadata key:comfyui-status=failed,请检查服务"
+  su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=failed --project=${project} --location=${location_zone}"
+else
+  echo "comfyui服务重启中,添加metadata key:comfyui-status=restarting,请检查服务"
+  su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=restarting --project=${project} --location=${location_zone}"
 fi
