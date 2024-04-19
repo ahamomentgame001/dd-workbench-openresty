@@ -150,7 +150,8 @@ fi
 
 if [ ! -d ${comfyui_manager_dir} ]; then
     echo "安装ComfyUI"
-    su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install  torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121 && pip install  -r ${home_dir}/requirements.txt"
+    su - jupyter -c "wget -O ${home_dir}/requirements-custom.txt https://raw.githubusercontent.com/ahamomentgame001/dd-workbench-openresty/main/requirements-custom.txt"
+    su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install  torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121 && pip install  -r ${home_dir}/requirements.txt && pip install  -r ${home_dir}/requirements-custom.txt"
 
     su - jupyter -c "cd ${home_dir} && git config --global --add safe.directory ${home_dir}"
     current_hash=$(su - jupyter -c "cd ${home_dir} && git rev-parse HEAD")
@@ -158,6 +159,9 @@ if [ ! -d ${comfyui_manager_dir} ]; then
 
 else
   echo "ComfyUI已安装,跳过安装步骤."
+  echo "每次重启安装requirements-custom.txt依赖包"
+  su - jupyter -c "wget -O ${home_dir}/requirements-custom.txt https://raw.githubusercontent.com/ahamomentgame001/dd-workbench-openresty/main/requirements-custom.txt"
+  su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate  && pip install  -r ${home_dir}/requirements-custom.txt"
 fi
 
 
@@ -300,13 +304,26 @@ fi
 
 
 # 检查comfyui服务是否正常,添加metadata
-if [[ `systemctl is-active comfyui` = "active" ]]; then
-  echo "comfyui服务正常,添加metadata key:comfyui-status=running"
-  su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=running --project=${project} --location=${location_zone}"
-elif [[ `systemctl is-failed comfyui` = "failed" ]]; then
-  echo "comfyui服务异常,添加metadata key:comfyui-status=failed,请检查服务"
-  su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=failed --project=${project} --location=${location_zone}"
-else
-  echo "comfyui服务重启中,添加metadata key:comfyui-status=restarting,请检查服务"
-  su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=restarting --project=${project} --location=${location_zone}"
-fi
+max_retries=10
+retry_count=0
+
+while [[ $retry_count -lt $max_retries ]]; do
+  if [[ `curl -m 5 -s -o /dev/null -w %{http_code} http://localhost/` == "200" ]]; then
+    echo "ComfyUI 服务正常, 添加 metadata key:comfyui-status=running"
+    su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=running --project=${project} --location=${location_zone}"
+    break  # 状态码为 200，退出循环
+  else
+    echo "ComfyUI 服务异常 (重试次数: $retry_count), 添加 metadata key:comfyui-status=failed, 请检查服务"
+    su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=failed --project=${project} --location=${location_zone}"
+    retry_count=$((retry_count + 1))
+    
+    # 添加条件判断，如果达到最大重试次数，则跳出循环
+    if [[ $retry_count -eq $max_retries ]]; then
+      echo "ComfyUI 服务启动失败，请检查服务并手动启动。"
+      break  # 跳出循环
+    fi
+    
+    sleep 5  # 等待 5 秒后重试
+  fi
+done
+
