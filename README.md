@@ -32,7 +32,8 @@ NFS_address="10.97.68.98:/vol1"
 
 | 文件名(路径) | 说明 | 
 | :--------  | :----- | 
-| gs://workbench-bucket/startup.sh | GCS内启动脚本路径 |
+| gs://workbench-bucket/staging_script/staging-startup.sh | debug，staging启动脚本路径 |
+| gs://workbench-bucket/startup.sh | prod启动脚本路径 |
 | /var/log/syslog | 系统启动日志 |
 | /home/jupyter/ComfyUI/comfyui.log | comfyui日志 |
 | /home/jupyter/.sd_link_created | 软链接标识文件，如果文件存在，则不重复执行软链接动作 |
