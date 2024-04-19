@@ -311,19 +311,18 @@ while [[ $retry_count -lt $max_retries ]]; do
   if [[ `curl -m 5 -s -o /dev/null -w %{http_code} http://localhost/` == "200" ]]; then
     echo "ComfyUI 服务正常, 添加 metadata key:comfyui-status=running"
     su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=running --project=${project} --location=${location_zone}"
-    break  # 状态码为 200，退出循环
+    break
   else
-    echo "ComfyUI 服务异常 (重试次数: $retry_count), 添加 metadata key:comfyui-status=failed, 请检查服务"
-    su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=failed --project=${project} --location=${location_zone}"
+    echo "ComfyUI 服务异常 (重试次数: $retry_count)" 
     retry_count=$((retry_count + 1))
     
-    # 添加条件判断，如果达到最大重试次数，则跳出循环
     if [[ $retry_count -eq $max_retries ]]; then
-      echo "ComfyUI 服务启动失败，请检查服务并手动启动。"
-      break  # 跳出循环
+      echo "ComfyUI 服务启动失败, 添加 metadata key:comfyui-status=failed, 请检查服务并手动启动."
+      su - jupyter -c "sudo gcloud workbench instances update ${instance_name} --metadata=comfyui-status=failed --project=${project} --location=${location_zone}"
+      break
     fi
     
-    sleep 5  # 等待 5 秒后重试
+    sleep 5
   fi
 done
 
