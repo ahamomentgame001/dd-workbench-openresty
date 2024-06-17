@@ -165,46 +165,68 @@ else
 fi
 
 
-# 定义隐藏标记文件路径
-hidden_flag_file="/home/jupyter/.comfyui_installed"
+# 检查并更新插件
 
-# 检查隐藏标记文件是否存在
-if [ ! -f "${hidden_flag_file}" ]; then
-  echo "首次运行，开始安装依赖..."
-  sudo wget -O /tmp/repos.txt https://raw.githubusercontent.com/ahamomentgame001/dd-workbench-openresty/main/repos.txt
-  
-  while read -r repo_url; do
-    repo_name=$(echo $repo_url | awk -F'/' '{print $NF}' | sed 's/.git//')
-    comfyui_dir="${home_dir}/custom_nodes/${repo_name}"
+echo "检查并更新插件..."
+sudo wget -O /tmp/repos.txt https://raw.githubusercontent.com/ahamomentgame001/dd-workbench-openresty/main/repos.txt
 
-    # 检查目录是否存在
-    if [ ! -d "${comfyui_dir}" ]; then
-      echo "安装 ${repo_name} 中"
-      echo "当前 ${comfyui_dir} 目录"
+while read -r line; do
+  # 使用正则表达式匹配版本号
+  if [[ $line =~ (.*)==(.*) ]]; then
+    repo_url="${BASH_REMATCH[1]}"
+    repo_hash="${BASH_REMATCH[2]}"
+  else
+    repo_url="$line"
+    repo_hash=""
+  fi
 
-      # 判断 requirements.txt 是否存在
-      if [[ "${repo_name}" == "ComfyUI_UltimateSDUpscale" ]]; then
-        su - jupyter -c "git clone ${repo_url} ${comfyui_dir} --recursive"
-      else
-        su - jupyter -c "git clone ${repo_url} ${comfyui_dir}"
-      fi
-      
-      if [ -f "${comfyui_dir}/requirements.txt" ]; then
-        su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install -r ${comfyui_dir}/requirements.txt"
-      else
-        echo "警告: ${comfyui_dir}/requirements.txt 不存在,跳过依赖安装."
-      fi
+  repo_name=$(echo "$repo_url" | awk -F'/' '{print $NF}' | sed 's/.git//')
+  comfyui_dir="${home_dir}/custom_nodes/${repo_name}"
+
+  # 检查插件目录是否存在
+  if [ ! -d "$comfyui_dir" ]; then
+    echo "插件 ${repo_name} 不存在，开始安装..."
+
+    # 如果指定了版本哈希值，则使用该版本
+    if [[ -n "$repo_hash" ]]; then
+      su - jupyter -c "git clone -b $repo_hash --depth 1 ${repo_url} ${comfyui_dir}"
     else
-      echo "${repo_name} 已安装, 跳过安装步骤."
+      su - jupyter -c "git clone ${repo_url} ${comfyui_dir}"
     fi
-  done < "/tmp/repos.txt"
 
-  # 创建隐藏标记文件
-  touch "${hidden_flag_file}"
-else
-  echo "检测到已安装标记，跳过依赖安装过程..."
-fi
+    # 判断 requirements.txt 是否存在
+    if [[ "${repo_name}" == "ComfyUI_UltimateSDUpscale" ]]; then
+      su - jupyter -c "git submodule update --init --recursive"
+    fi
 
+    if [ -f "${comfyui_dir}/requirements.txt" ]; then
+      su - jupyter -c "cd ${home_dir} && /opt/conda/bin/python3 -m venv venv && source venv/bin/activate && pip install -r ${comfyui_dir}/requirements.txt"
+    else
+      echo "警告: ${comfyui_dir}/requirements.txt 不存在,跳过依赖安装."
+    fi
+
+  else
+    echo "插件 ${repo_name} 已存在，开始检查版本..."
+
+    # 获取当前分支的哈希值
+    current_hash=$(su - jupyter -c "cd ${comfyui_dir} && git rev-parse HEAD")
+
+    # 检查是否需要更新
+    if [[ -n "$repo_hash" && "$current_hash" != "$repo_hash" ]]; then
+      echo "  插件 ${repo_name} 版本不匹配，开始更新到指定版本..."
+      su - jupyter -c "cd ${comfyui_dir} && git fetch --all && git checkout $repo_hash && git reset --hard $repo_hash"
+    elif [[ -z "$repo_hash" && "$current_hash" != $(git ls-remote "$repo_url" HEAD | cut -f1) ]]; then
+      echo "  插件 ${repo_name} 不是最新版本，开始更新..."
+      su - jupyter -c "cd ${comfyui_dir} && git pull"
+    else
+      echo "  插件 ${repo_name} 已是最新版本，跳过..."
+      continue  # 跳过当前循环，继续下一个插件
+    fi
+
+  fi
+done < "/tmp/repos.txt"
+
+echo "插件安装或更新完毕..."
 
 
 
