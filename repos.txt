@@ -13,6 +13,6 @@ https://github.com/civitai/civitai_comfy_nodes.git
 https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet.git
 https://github.com/AIGODLIKE/AIGODLIKE-ComfyUI-Translation.git
 https://github.com/Acly/comfyui-tooling-nodes.git
-https://github.com/Acly/comfyui-inpaint-nodes.git
+https://github.com/Acly/comfyui-inpaint-nodes.git==9927f44cb4a9878f1737cbabf8a29d2fc8182d0f
 https://github.com/11cafe/comfyui-workspace-manager.git
 https://github.com/crystian/ComfyUI-Crystools.git
