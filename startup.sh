@@ -323,7 +323,19 @@ else
     echo "openresty服务异常,请检查服务."
 fi
 
+# 收集本机磁盘使用情况
+collect_disk_usage() {
+BUCKET_NAME="workbench-bucket"  
+FOLDER_NAME="workbench_disk_df_results"
+OUTPUT_FILE_PREFIX="df_output_"
+INSTANCE_NAME=$(hostname)
 
+df -h | awk '$1!="/dev/loop"{print $1","$2","$3","$4","$5","$6}' |grep -v 'tmpfs'|grep -v 'udev' |grep -v 'boot' |grep -v 'mnt' > /tmp/df_output.csv
+
+gsutil cp /tmp/df_output.csv gs://${BUCKET_NAME}/${FOLDER_NAME}/${OUTPUT_FILE_PREFIX}${INSTANCE_NAME}.csv
+}
+
+collect_disk_usage
 
 # 检查comfyui服务是否正常,添加metadata
 max_retries=10
